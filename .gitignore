@@ -1,0 +1,27 @@
+# dataset / raw data
+/data/
+data/
+
+# model checkpoints and weights
+models/
+
+*.pth
+*.h5
+*.ckpt
+
+# experiments / outputs
+logs/
+runs/
+
+# common ignores
+__pycache__/
+*.pyc
+.env
+venv/
+.env/
+*.zip
+*.tar.gz
+*.npz
+*.pkl
+.DS_Store
+.vscode/
