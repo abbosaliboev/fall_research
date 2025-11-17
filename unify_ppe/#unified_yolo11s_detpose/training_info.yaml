@@ -1,0 +1,4 @@
+det_best: '#unified_yolo11s_detpose\det_unify\weights\best.pt'
+pose_backbone: C:\Users\ali\Projects\fall_research\unify_ppe\models\yolo11s-pose.pt
+save_dir: '#unified_yolo11s_detpose'
+time: '2025-11-17 17:48:51'

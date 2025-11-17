@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+# generate_sequences.py
 """
 generate_sequences.py
 frame_labels_all.csv + pose_features.csv -> fall_sequences_priority_label.csv
@@ -52,26 +52,58 @@ def load_and_join():
     if not os.path.exists(POSE_CSV):
         raise FileNotFoundError(f"Topilmadi: {POSE_CSV}")
 
+    print("[INFO] Loading CSVs...")
     df_labels = pd.read_csv(LABELS_CSV)
     df_pose   = pd.read_csv(POSE_CSV)
+    
+    print(f"[INFO] Labels CSV: {len(df_labels)} rows")
+    print(f"[INFO] Pose CSV: {len(df_pose)} rows")
 
-    need_lab = {"filename", "label"}
-    if not need_lab.issubset(df_labels.columns):
-        raise ValueError(f"Labels CSV uchun kerak: {need_lab}")
-
-    need_pose = {"filename", "subject", "activity", "clip", "frame"}
-    need_pose = need_pose.union(set(NKP_COLS))
-    if not need_pose.issubset(df_pose.columns):
-        raise ValueError("Pose CSV ustunlari yetarli emas (nkp*_x/y kutiladi).")
-
-    # Join
-    if "label_id" in df_labels.columns:
-        df = df_pose.merge(df_labels[["filename", "label", "label_id"]], on="filename", how="inner")
+    # ✅ Pose CSV da label bor yoki yo'qligini tekshirish
+    if "label" in df_pose.columns and "label_id" in df_pose.columns:
+        print("[INFO] Pose CSV da label mavjud, to'g'ridan-to'g'ri ishlatiladi.")
+        df = df_pose.copy()
     else:
-        df = df_pose.merge(df_labels[["filename", "label"]], on="filename", how="inner")
-        df["label_id"] = df["label"].map(LABEL2ID).astype(int)
+        print("[INFO] Pose CSV da label yo'q, Labels CSV dan merge qilinmoqda...")
+        # Labels CSV dan kerakli ustunlarni olish
+        need_lab = {"filename", "label"}
+        if not need_lab.issubset(df_labels.columns):
+            raise ValueError(f"Labels CSV uchun kerak: {need_lab}")
+        
+        # Merge qilish
+        merge_cols = ["filename", "label"]
+        if "label_id" in df_labels.columns:
+            merge_cols.append("label_id")
+        
+        df = df_pose.merge(df_labels[merge_cols], on="filename", how="left")
+        
+        # label_id yo'q bo'lsa yaratish
+        if "label_id" not in df.columns:
+            df["label_id"] = df["label"].map(LABEL2ID)
+    
+    # ✅ label ustuni borligini tekshirish
+    if "label" not in df.columns:
+        raise ValueError("❌ Merge qilingandan keyin ham 'label' ustuni yo'q!")
+    
+    # ✅ NaN labellarni tekshirish
+    nan_count = df["label"].isna().sum()
+    if nan_count > 0:
+        print(f"[WARN] {nan_count} ta frame uchun label topilmadi (NaN), ular o'chiriladi.")
+        df = df.dropna(subset=["label"])
+    
+    # ✅ nkp ustunlarini tekshirish
+    need_pose = set(NKP_COLS)
+    missing_cols = need_pose - set(df.columns)
+    if missing_cols:
+        raise ValueError(f"❌ Pose CSV da quyidagi ustunlar yo'q: {missing_cols}")
 
     df["frame"] = pd.to_numeric(df["frame"], errors="coerce").fillna(-1).astype(int)
+    df["label_id"] = df["label_id"].astype(int)
+    
+    print(f"[INFO] Merged DF: {len(df)} rows")
+    print("[INFO] Label distribution:")
+    print(df["label"].value_counts())
+    
     return df
 
 
@@ -140,21 +172,29 @@ def run():
     print("[INFO] Join qilinmoqda...")
     df = load_and_join()
 
+    print(f"[INFO] Creating sequences (seq_len={SEQ_LEN})...")
     all_rows = []
     for (subj, act, clip), g in df.groupby(["subject", "activity", "clip"], dropna=False):
-        all_rows.extend(make_sequences_for_group(g, seq_len=SEQ_LEN))
+        rows = make_sequences_for_group(g, seq_len=SEQ_LEN)
+        if rows:
+            all_rows.extend(rows)
+            if len(all_rows) % 1000 == 0:
+                print(f"[INFO] Progress: {len(all_rows)} sequences...")
 
     if not all_rows:
-        raise RuntimeError("Hech qanday sequence hosil bo‘lmadi. Parametrlarni tekshiring.")
+        raise RuntimeError("Hech qanday sequence hosil bo'lmadi. Parametrlarni tekshiring.")
 
     out_df = pd.DataFrame(all_rows)
-    print("[INFO] Sequence counts by label:")
+    print("\n[INFO] Sequence counts by label:")
     print(out_df["label"].value_counts())
 
+    print("[INFO] Shuffling sequences...")
     out_df = out_df.sample(frac=1.0, random_state=42).reset_index(drop=True)
+    
     out_df.to_csv(OUT_CSV, index=False, encoding="utf-8")
     print("✅ Saved:", OUT_CSV)
     print(f"[INFO] seq_len={SEQ_LEN}, feat_dim={FEAT_DIM}, total_sequences={len(out_df)}")
+    print(f"[INFO] CSV size: {os.path.getsize(OUT_CSV) / (1024*1024):.2f} MB")
 
 
 if __name__ == "__main__":

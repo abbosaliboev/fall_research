@@ -25,3 +25,8 @@ venv/
 *.pkl
 .DS_Store
 .vscode/
+
+# data
+*.jpg
+*.txt
+*.png

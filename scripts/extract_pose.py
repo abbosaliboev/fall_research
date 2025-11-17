@@ -1,15 +1,16 @@
-# -*- coding: utf-8 -*-
+# extract_pose.py
 """
 extract_pose.py
 - frame_labels_all.csv ni o'qiydi (filename = PROJECT_ROOT ga nisbiy yo'l)
 - Har rasmga YOLO-Pose ishlatib 17 keypoint: x,y,conf (raw) va normalized (nx,ny) ni yozadi
 - Bir nechta odam aniqlansa, keypoint konfidentsiyalari yig'indisi eng katta bo'lganini oladi
 - Aniqlanmasa: 0 bilan to'ldiriladi, detected=0
+- **3 ta class:** no_fall, pre_fall, fall (frame_labels_all.csv dan olinadi)
 
 Chiqish:
   <PROJECT_ROOT>/pose_features.csv
   Ustunlar:
-    filename, subject, activity, clip, frame, detected,
+    filename, subject, activity, clip, frame, label, label_id, detected,
     kp0_x, kp0_y, kp0_c, ..., kp16_x, kp16_y, kp16_c,
     nkp0_x, nkp0_y, ..., nkp16_x, nkp16_y
 """
@@ -26,9 +27,9 @@ except Exception as e:
     raise RuntimeError("Ultralytics o'rnatilmagan. `pip install ultralytics opencv-python`") from e
 
 # ============ PATHLAR ============
-PROJECT_ROOT = r"C:\Users\ali\Projects\fall_research"
+PROJECT_ROOT = r"C:\Users\ali\Projects\fall_research/"
 LABELS_CSV   = os.path.join(PROJECT_ROOT, "frame_labels_all.csv")
-# Weights fayllaringiz scripts/ ichida bor (screenshotdan)
+# Weights fayllaringiz scripts/ ichida bor
 WEIGHTS_CAND = [
     os.path.join(PROJECT_ROOT, "scripts", "yolo11m-pose.pt"),
     os.path.join(PROJECT_ROOT, "scripts", "yolo11s-pose.pt"),
@@ -131,87 +132,83 @@ def run():
     print("[INFO] YOLO Pose model yuklanmoqda...")
     model = YOLO(weights)
 
+    # ✅ CSV ni to'liq o'qiymiz (label va label_id ham bor)
     df = pd.read_csv(LABELS_CSV)
-    if "filename" not in df.columns:
-        raise ValueError("CSVda 'filename' ustuni yo‘q")
+    required_cols = ["filename", "label", "label_id"]
+    for col in required_cols:
+        if col not in df.columns:
+            raise ValueError(f"CSVda '{col}' ustuni yo'q. Iltimos generate_labels.py ni qayta ishlating.")
 
-    # Keraksiz takrorlarni olib tashlaymiz (bitta rasm bir marta infer qilinsin)
-    files = df["filename"].drop_duplicates().tolist()
+    print(f"[INFO] Jami {len(df)} ta frame topildi CSVda")
+    print("[INFO] Label distribution:")
+    print(df["label"].value_counts())
 
     rows = []
     miss = 0
     found = 0
 
-    for relpath in tqdm(files, desc="Pose extracting"):
+    # ✅ Har bir filename uchun inference (CSV dagi tartibda)
+    for idx, row_orig in tqdm(df.iterrows(), total=len(df), desc="Pose extracting"):
+        relpath = row_orig["filename"]
+        label = row_orig["label"]
+        label_id = row_orig["label_id"]
+        
+        # ✅ Agar CSV da boshqa ustunlar bo'lsa (subject, activity, clip, frame) ularni ham saqlash
+        subject = row_orig.get("subject", "")
+        activity = row_orig.get("activity", "")
+        clip = row_orig.get("clip", "")
+        frame = row_orig.get("frame", -1)
+
         abspath = os.path.join(PROJECT_ROOT, relpath)
         if not os.path.exists(abspath):
             miss += 1
-            # yo'q bo'lsa skiplaymiz, lekin satr yozmaymiz
-            continue
-
-        # Inference
-        try:
-            results = model(
-                abspath, imgsz=IMGSZ, conf=CONF, device=DEVICE, verbose=False
-            )
-        except Exception as e:
-            print(f"[ERR] Inference xatosi: {abspath}\n{e}")
-            miss += 1
-            continue
-
-        res = results[0]
-        # kpts
-        if (res.keypoints is None) or (res.keypoints.xy is None) or (len(res.keypoints.xy) == 0):
-            # Hech kim topilmadi
+            print(f"[WARN] Fayl topilmadi: {relpath}")
+            # Yo'q bo'lsa ham satr qo'shamiz (detected=0)
             kp_xy = np.zeros((NUM_KP, 2), dtype=float)
             kp_c  = np.zeros((NUM_KP,), dtype=float)
             nkp_xy = np.zeros_like(kp_xy)
             detected = 0
         else:
-            kxy = res.keypoints.xy.cpu().numpy()       # (N,17,2)
-            kcf = res.keypoints.conf.cpu().numpy()     # (N,17)
-            idx = _person_selector(kxy, kcf)
-            kp_xy = kxy[idx]        # (17,2)
-            kp_c  = kcf[idx]        # (17,)
-            nkp_xy = _normalize(kp_xy, kp_c)
-            detected = 1
+            # Inference
+            try:
+                results = model(
+                    abspath, imgsz=IMGSZ, conf=CONF, device=DEVICE, verbose=False
+                )
+            except Exception as e:
+                print(f"[ERR] Inference xatosi: {abspath}\n{e}")
+                miss += 1
+                kp_xy = np.zeros((NUM_KP, 2), dtype=float)
+                kp_c  = np.zeros((NUM_KP,), dtype=float)
+                nkp_xy = np.zeros_like(kp_xy)
+                detected = 0
+            else:
+                res = results[0]
+                # kpts
+                if (res.keypoints is None) or (res.keypoints.xy is None) or (len(res.keypoints.xy) == 0):
+                    # Hech kim topilmadi
+                    kp_xy = np.zeros((NUM_KP, 2), dtype=float)
+                    kp_c  = np.zeros((NUM_KP,), dtype=float)
+                    nkp_xy = np.zeros_like(kp_xy)
+                    detected = 0
+                else:
+                    kxy = res.keypoints.xy.cpu().numpy()       # (N,17,2)
+                    kcf = res.keypoints.conf.cpu().numpy()     # (N,17)
+                    idx = _person_selector(kxy, kcf)
+                    kp_xy = kxy[idx]        # (17,2)
+                    kp_c  = kcf[idx]        # (17,)
+                    nkp_xy = _normalize(kp_xy, kp_c)
+                    detected = 1
+                    found += 1
 
-        # subject/activity/clip/frame ni filename'dan olish (agar bor bo'lsa)
-        # relpath misol: fall_data\Subject1\Activity1\1\23.png yoki nofall_data\Subject1\Walk\clip01\0001.png
-        parts = relpath.replace("\\", "/").split("/")
-        subject = ""
-        activity = ""
-        clip = ""
-        frame = -1
-        # heuristika:
-        try:
-            # frame
-            bn = os.path.splitext(parts[-1])[0]
-            frame = int(bn)
-        except:
-            frame = -1
-
-   
-        # fall_data bo'lsa (oldinda 'data/' bo'lishi mumkin)
-        if len(parts) >= 6 and parts[1] == "fall_data":
-            subject = parts[2]
-            activity = parts[3]
-            clip = parts[4]
-
-        # nofall_data bo'lsa
-        elif len(parts) >= 5 and parts[1] == "nofall_data":
-            subject = parts[2]
-            activity = parts[3]
-            clip = parts[4] if len(parts) >= 6 else activity
-
-
-        # satr yig'ish
+        # ✅ satr yig'ish (label va label_id qo'shildi)
         row = {
             "filename": relpath,
             "subject": subject,
             "activity": activity,
             "clip": clip,
             "frame": frame,
+            "label": label,           # ✅ 3 ta class
+            "label_id": label_id,     # ✅ 0, 1, 2
             "detected": detected,
         }
 
@@ -227,13 +224,19 @@ def run():
             row[f"nkp{j}_y"] = float(nkp_xy[j, 1])
 
         rows.append(row)
-        found += 1
 
     pose_df = pd.DataFrame(rows)
     pose_df.to_csv(OUT_CSV, index=False, encoding="utf-8")
     print("✅ Saved:", OUT_CSV)
-    print(f"[INFO] Jami: {len(files)}, topildi: {found}, topilmadi/skip: {miss}")
+    print(f"[INFO] Jami: {len(df)}, pose topildi: {found}, topilmadi/skip: {miss}")
+    
+    # ✅ 3 ta class distribution
+    if "label" in pose_df.columns:
+        print("\n--- Label distribution (pose_features.csv) ---")
+        print(pose_df["label"].value_counts())
+    
     if "detected" in pose_df.columns:
+        print("\n--- Detection status ---")
         print(pose_df["detected"].value_counts(dropna=False))
 
 
