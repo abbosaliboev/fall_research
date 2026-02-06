@@ -1,3 +1,5 @@
+# dataset.py
+
 import pandas as pd
 import numpy as np
 import torch
@@ -17,7 +19,6 @@ class FallDataset(Dataset):
         for act in activities:
             temp_df = self.df[self.df['activity'] == act]
             kp_data = temp_df.iloc[:, :20].values
-            # Har bir kadrning o'z labeli bor
             frame_labels = temp_df['label'].values 
             
             if len(kp_data) < self.window_size:
@@ -25,15 +26,15 @@ class FallDataset(Dataset):
 
             for i in range(0, len(kp_data) - self.window_size, self.step_size):
                 window = kp_data[i : i + self.window_size]
-                # Agarda oynaning (window) oxirgi kadri 1 bo'lsa, bu yiqilish jarayoni
+                # Oynaning oxirgi kadri labelini olish
                 label = 1 if frame_labels[i + self.window_size - 1] == 1 else 0
                 
                 X.append(window)
                 y.append(label)
                 
-                # NOVELTY: Yiqilish kadrlarini modelga 15 marta ko'proq nusxalab beramiz
+                # Yiqilishni 5 marta ko'paytiramiz (Oversampling)
                 if label == 1:
-                    for _ in range(15):
+                    for _ in range(5):
                         X.append(window)
                         y.append(1)
         
