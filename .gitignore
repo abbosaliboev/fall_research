@@ -1,10 +1,11 @@
 # dataset / raw data
-
+/data/
+data/
 
 # model checkpoints and weights
 models/
 
-*.pth
+
 *.h5
 *.ckpt
 
