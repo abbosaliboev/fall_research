@@ -1,0 +1,36 @@
+path: C:/Users/dalab/Desktop/azimjaan21/RESEARCH/wrist_kpt/coco_10kpts/images
+
+train: train2017
+val: val2017
+
+nc: 1
+names: ['person']
+
+# 10 keypoints
+kpt_shape: [10, 3]
+
+flip_idx: [0, 2, 1, 4, 3, 6, 5, 8, 7, 9]
+
+keypoint_names:
+  - kp0
+  - kp1
+  - kp2
+  - kp3
+  - kp4
+  - kp5
+  - kp6
+  - kp7
+  - kp8
+  - kp9
+
+skeleton:
+  - [0,1]
+  - [1,2]
+  - [2,3]
+  - [3,4]
+  - [5,6]
+  - [6,7]
+  - [7,8]
+  - [8,9]
+  - [1,5]
+  - [2,6]

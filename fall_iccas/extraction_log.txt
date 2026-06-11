@@ -1,0 +1,49 @@
+  S1 A1 T1  195 frames  label=1
+  S1 A1 T2  193 frames  label=1
+  S1 A1 T3  194 frames  label=1
+  S1 A10 T1  530 frames  label=0
+  S1 A10 T2  525 frames  label=0
+  S1 A10 T3  499 frames  label=0
+  S1 A11 T1  1062 frames  label=0
+  S1 A11 T2  1039 frames  label=0
+  S1 A11 T3  1014 frames  label=0
+  S1 A2 T1  157 frames  label=1
+    zero frames: 26 -> 0 after interpolation
+  S1 A2 T2  195 frames  label=1
+    zero frames: 99 -> 0 after interpolation
+  S1 A2 T3  194 frames  label=1
+    zero frames: 82 -> 0 after interpolation
+  S1 A3 T1  192 frames  label=1
+  S1 A3 T2  191 frames  label=1
+  S1 A3 T3  190 frames  label=1
+  S1 A4 T1  189 frames  label=1
+  S1 A4 T2  191 frames  label=1
+  S1 A4 T3  193 frames  label=1
+  S1 A5 T1  189 frames  label=1
+  S1 A5 T2  182 frames  label=1
+  S1 A5 T3  187 frames  label=1
+  S1 A6 T1  1133 frames  label=0
+    zero frames: 106 -> 0 after interpolation
+  S1 A6 T2  1124 frames  label=0
+    zero frames: 53 -> 0 after interpolation
+  S1 A6 T3  1115 frames  label=0
+    zero frames: 85 -> 0 after interpolation
+  S1 A7 T1  1121 frames  label=0
+  S1 A7 T2  1101 frames  label=0
+  S1 A7 T3  1084 frames  label=0
+  S1 A8 T1  1079 frames  label=0
+  S1 A8 T2  1088 frames  label=0
+  S1 A8 T3  1054 frames  label=0
+  S1 A9 T1  181 frames  label=0
+  S1 A9 T2  177 frames  label=0
+  S1 A9 T3  174 frames  label=0
+
+X shape  : (1145, 30, 17, 3)   (N, T=30, V=17, C=3)
+y shape  : (1145,)
+FALL     : 165 sequences
+NO-FALL  : 980 sequences
+
+Saved to : F:\Project_F\fall_research\fall_iccas\cv_dataset
+
+ST-GCN input: X.transpose(0,3,1,2)[:,None]  -> (N, C, T, V, 1)
+TCN input   : X.reshape(N, T, -1)           -> (N, T, V*C)

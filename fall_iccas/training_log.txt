@@ -1,0 +1,71 @@
+Device: cuda
+
+Data: X=(1145, 30, 17, 3)  y=(1145,)  FALL=165  NO-FALL=980
+Split: train=801 val=172 test=172
+
+==================================================
+  Stage 1: Training ST-GCN
+==================================================
+  Epoch   1/60  tr_loss=0.7090 tr_acc=0.672  val_acc=0.855 val_fall_f1=0.000  best_f1=0.000
+  Epoch  10/60  tr_loss=0.1074 tr_acc=0.966  val_acc=0.866 val_fall_f1=0.657  best_f1=0.714
+  Epoch  20/60  tr_loss=0.0307 tr_acc=0.991  val_acc=0.953 val_fall_f1=0.833  best_f1=0.917
+  Epoch  30/60  tr_loss=0.0525 tr_acc=0.983  val_acc=0.936 val_fall_f1=0.766  best_f1=0.920
+  Epoch  40/60  tr_loss=0.0126 tr_acc=0.999  val_acc=0.959 val_fall_f1=0.863  best_f1=0.936
+  Epoch  50/60  tr_loss=0.0163 tr_acc=0.994  val_acc=0.971 val_fall_f1=0.898  best_f1=0.941
+  Epoch  60/60  tr_loss=0.0086 tr_acc=0.999  val_acc=0.983 val_fall_f1=0.939  best_f1=0.941
+
+Loaded best model (val fall F1=0.9412)
+
+==================================================
+  Stage 1 Only — ST-GCN
+==================================================
+  Accuracy : 0.9884
+  Fall F1  : 0.9600
+
+              precision    recall  f1-score   support
+
+     NO-FALL       0.99      0.99      0.99       147
+        FALL       0.96      0.96      0.96        25
+
+    accuracy                           0.99       172
+   macro avg       0.98      0.98      0.98       172
+weighted avg       0.99      0.99      0.99       172
+
+Confusion Matrix:
+[[146   1]
+ [  1  24]]
+
+==================================================
+  Stage 2: Fitting Physics Filter
+==================================================
+[PhysicsFilter] grid-search — vel > 0.03536  acc > 0.35452  best_val_fall_F1 = 0.8980
+[TwoStage] stage1_threshold=0.55  rescue_threshold=0.50  val_fall_F1=0.9412
+
+==================================================
+  Stage 1 + Stage 2 — ST-GCN + Physics (Rescue)
+==================================================
+  Accuracy : 0.9884
+  Fall F1  : 0.9600
+
+              precision    recall  f1-score   support
+
+     NO-FALL       0.99      0.99      0.99       147
+        FALL       0.96      0.96      0.96        25
+
+    accuracy                           0.99       172
+   macro avg       0.98      0.98      0.98       172
+weighted avg       0.99      0.99      0.99       172
+
+Confusion Matrix:
+[[146   1]
+ [  1  24]]
+
+==================================================
+  COMPARISON SUMMARY
+==================================================
+  Model                            Accuracy    Fall F1
+  --------------------------------------------------
+  ST-GCN (Stage 1)                   0.9884     0.9600
+  ST-GCN + Physics (2-Stage)         0.9884     0.9600
+
+Config saved: F:\Project_F\fall_research\fall_iccas\checkpoints\two_stage_config.json
