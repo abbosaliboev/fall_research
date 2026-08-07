@@ -1,85 +1,56 @@
 # Fall Research — Human Activity / Fall Detection
 
-Short README for the repository. It explains where to get the dataset, how the repository is organised, and quick commands to prepare and run experiments.
+Bir necha yillik fall-detection tadqiqotlarini o'z ichiga olgan repo. Faol
+loyihalar tepada, oldingi avlodlar `archive/` da saqlanadi.
+
+## Papka tuzilmasi
+
+- **`fall_iccas/`** — eng so'nggi tugallangan loyiha: ST-GCN + Physics Filter
+  ikki bosqichli fall detection, UP-Fall dataset asosida (ICCAS 2026 maqolasi
+  uchun). Batafsil: `fall_iccas/README.md`, `fall_iccas/RESULTS.md`.
+- **`Fall_Research_Paper/`** — navbatdagi maqola/tadqiqot uchun yangi, faol
+  ish joyi.
+- **`archive/`** — oldingi avlodlar, tarixiy/qayta ishlatish uchun saqlangan:
+  - `archive/2026_Fall_research/` — YOLO11-pose (10kp va full-kp) + TCN
+    yondashuvi, dataset, model checkpointlar va training natijalari bilan.
+  - `archive/legacy_tcn/` — eng birinchi TCN asosidagi versiya (`scripts/`,
+    sequence/label CSV fayllari).
+  - `archive/experiments_fall/` — eski checkpoint fayllari (FD-01, FD-02).
+- **`PPT/`** — taqdimot materiallari.
+- **`venv/`** — Python virtual environment (Git tomonidan e'tiborga
+  olinmaydi).
+
+> Eslatma: PPE (himoya kiyimi) detection loyihasi fall detection bilan
+> aloqasi yo'qligi sababli `F:\Project_F\ppe` ga chiqarib qo'yilgan.
 
 ## Dataset
 
 Dataset link:
 https://sites.google.com/up.edu.mx/har-up/
 
-Download the dataset from the link above and place the extracted dataset under the repository `data/` directory (e.g. `data/fall_data/` and `data/nofall_data/`). Do NOT commit large raw datasets to Git — see the "Ignoring dataset files" section below.
-
-## Project structure (important folders)
-
-- `data/` - raw dataset (should be kept out of Git). Put downloaded data here.
-- `scripts/` - training, evaluation and preprocessing scripts (e.g. `train_tcn.py`, `eval_tcn.py`, `extract_pose.py`).
-- `models/` - model artifacts and dataset derivatives (should be ignored by Git).
-- `experiments/` - saved checkpoints, logs and experiment outputs (should be ignored by Git).
-- `*.csv` - dataset split/label files provided at repo root (small metadata files may be tracked).
+Loyihaga qarab kerakli dataset shu loyiha papkasi ichidagi `data/` yoki
+`dataset/` katalogiga joylashtiriladi. Katta xom datasetlarni Git'ga
+commit qilmang.
 
 ## Setup
 
-This project uses the Python packages listed in `requirements.txt`. Create a virtual environment and install requirements:
-
 ```powershell
-# create venv (Windows PowerShell)
-python -m venv .venv; .\.venv\Scripts\Activate.ps1
+python -m venv venv; .\venv\Scripts\Activate.ps1
 pip install -r requirements.txt
 ```
 
-Adjust the Python command and activation command to match your environment (PowerShell example shown above).
+## Ishlash
 
-## Quick run examples
-
-Train a model (example):
-
-```powershell
-python scripts\train_tcn.py --config configs/train_config.yaml
-```
-
-Evaluate a trained model (example):
-
-```powershell
-python scripts\eval_tcn.py --checkpoint experiments\myrun\best.pt --data-dir data
-```
-
-Inspect available scripts in the `scripts/` folder for specific options used in this repo.
+Har bir loyiha (`fall_iccas/`, `Fall_Research_Paper/`, `archive/...`) o'z
+ichida mustaqil — kerakli scriptlar va o'qish uchun shu papkalardagi
+README/RESULTS fayllariga qarang.
 
 ## Ignoring dataset files (important)
 
-You should add the dataset and other large files to `.gitignore` to avoid committing them. Example `.gitignore` entries:
-
-```
-# dataset
-data/
-
-# models and checkpoints
-models/
-*.pt
-*.pth
-
-# common
-__pycache__/
-*.pyc
-venv/
-.venv/
-```
-
-If the `data/` folder (or other large files) were already committed to the repo in previous commits, adding to `.gitignore` is not enough. To stop tracking those files but keep them locally, run:
+`.gitignore` allaqachon `data/`, `models/`, checkpoint va katta binary
+fayllarni chiqarib tashlaydi. Agar oldin commit qilingan bo'lsa:
 
 ```powershell
-git rm -r --cached "data/"
-git commit -m "Stop tracking dataset files in data/ and add to .gitignore"
-git push
+git rm -r --cached "path/to/data"
+git commit -m "Stop tracking dataset files"
 ```
-
-Repeat `git rm -r --cached` for other directories you want to untrack (for example `models/` or `experiments/`). The `--cached` flag removes files from the index but leaves them on disk.
-
-## Notes and next steps
-
-- I can add the `.gitignore` entries for you and run the `git rm --cached` commands if you want — tell me whether to just update `.gitignore` or also untrack the already committed `data/` files.
-- For sharing models or large binary data between collaborators, consider using Git LFS or an external storage bucket.
-
-## Contact
-
-If you need more help (examples, config files, or CI), tell me what to add and I will update the repo.

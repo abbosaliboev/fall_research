@@ -4,10 +4,18 @@ data/
 
 # model checkpoints and weights
 models/
-
+checkpoints/
 
 *.h5
 *.ckpt
+*.pt
+*.pth
+
+# videos
+*.mp4
+*.avi
+*.mov
+*.MOV
 
 # experiments / outputs
 logs/

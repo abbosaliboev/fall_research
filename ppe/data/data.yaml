@@ -1,8 +1,0 @@
-names:
-- helmet
-- vest
-- head
-nc: 3
-path: C:\Users\ali\Projects\fall_research\ppe\data
-train: train/images
-val: val/images
